@@ -1,6 +1,7 @@
 package main
 
 import (
+	"imp/auth"
 	"imp/database"
 	"imp/handler"
 	"imp/helper"
@@ -19,12 +20,15 @@ func main() {
 
 	router := gin.Default()
 
+	authService := auth.NewAuth()
+
 	userRepo := user.NewRepository(conn)
 	userService := user.NewService(userRepo)
-	userHandler := handler.NewUserHandler(userService)
+	userHandler := handler.NewUserHandler(userService, authService)
 
 	// endpoint
 	router.POST("auth/signup", userHandler.SignUp)
+	router.POST("auth/login", userHandler.Login)
 
 	env, err := helper.GetENV(".env")
 	if err != nil {
