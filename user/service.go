@@ -7,7 +7,8 @@ import (
 )
 
 type IService interface {
-	CreateUser(input InputNewUser) (User, error, int)
+	SignupUser(input InputNewUser) (User, int, error)
+	LoginUser(input InputLoginUser) (User, int, error)
 }
 
 type service struct {
@@ -18,18 +19,18 @@ func NewService(userRepo IRepository) *service {
 	return &service{userRepo}
 }
 
-func (s *service) CreateUser(input InputNewUser) (User, error, int) {
+func (s *service) SignupUser(input InputNewUser) (User, int, error) {
 	// find user by username
 	userByUsername, err := s.userRepo.FindByUsername(input.Username)
 	if err != nil {
-		return userByUsername, err, http.StatusInternalServerError
+		return userByUsername, http.StatusInternalServerError, err
 	}
 
 	if userByUsername.ID != 0 {
-		return userByUsername, fmt.Errorf(
+		return userByUsername, http.StatusConflict, fmt.Errorf(
 			"username %v telah digunakan",
 			input.Username,
-		), http.StatusConflict
+		)
 	}
 
 	// save user to database
@@ -39,15 +40,43 @@ func (s *service) CreateUser(input InputNewUser) (User, error, int) {
 
 	password, err := helper.HashingPassword(input.Password)
 	if err != nil {
-		return userByUsername, err, http.StatusInternalServerError
+		return userByUsername, http.StatusInternalServerError, err
 	}
 
 	user.Password = password
 
 	userSaved, err := s.userRepo.Save(user)
 	if err != nil {
-		return userByUsername, err, http.StatusInternalServerError
+		return userByUsername, http.StatusInternalServerError, err
 	}
 
-	return userSaved, nil, http.StatusOK
+	return userSaved, http.StatusOK, nil
+}
+
+func (s *service) LoginUser(input InputLoginUser) (User, int, error) {
+	// find user by username
+	userByUsername, err := s.userRepo.FindByUsername(input.Username)
+	if err != nil {
+		return userByUsername, http.StatusInternalServerError, err
+	}
+
+	if userByUsername.ID == 0 {
+		return userByUsername, http.StatusBadRequest, fmt.Errorf(
+			"username %v belum terdaftar",
+			input.Username,
+		)
+	}
+
+	// verify password
+	err = helper.VerifyPassword(
+		userByUsername.Password,
+		input.Password,
+	)
+	if err != nil {
+		return userByUsername, http.StatusBadRequest, fmt.Errorf(
+			"password salah",
+		)
+	}
+
+	return userByUsername, http.StatusOK, nil
 }
