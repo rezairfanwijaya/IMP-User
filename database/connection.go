@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"imp/helper"
+	"imp/user"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -29,6 +30,7 @@ func NewConnection(pathENV string) (*gorm.DB, error) {
 		dbName,
 	)
 
+	// connection to database
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return db, fmt.Errorf(
@@ -37,5 +39,17 @@ func NewConnection(pathENV string) (*gorm.DB, error) {
 		)
 	}
 
+	// migration schema
+	if err := db.AutoMigrate(&user.User{}); err != nil {
+		return db, fmt.Errorf(
+			"gagal migration schema : %v",
+			err.Error(),
+		)
+	}
+
+	// migaration seed users
+	if err := MigarationUserSeed(db); err != nil {
+		return db, err
+	}
 	return db, nil
 }
