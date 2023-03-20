@@ -3,9 +3,30 @@ package helper
 import (
 	"fmt"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type responseAPI struct {
+	Meta meta        `json:"meta"`
+	Data interface{} `json:"data"`
+}
+
+type meta struct {
+	Status string `json:"status"`
+	Code   int    `json:"code"`
+}
+
+func GenerateResponse(status string, code int, data interface{}) *responseAPI {
+	return &responseAPI{
+		Meta: meta{
+			Status: status,
+			Code:   code,
+		},
+		Data: data,
+	}
+}
 
 func GetENV(path string) (map[string]string, error) {
 	env, err := godotenv.Read(path)
@@ -40,4 +61,14 @@ func VerifyPassword(hashedPassword, rawPassword string) error {
 	}
 
 	return nil
+}
+
+func GenerateErrorBinding(err error) []string {
+	var errBinding []string
+
+	for _, e := range err.(validator.ValidationErrors) {
+		errBinding = append(errBinding, e.Error())
+	}
+
+	return errBinding
 }
