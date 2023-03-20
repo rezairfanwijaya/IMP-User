@@ -9,6 +9,7 @@ import (
 type IService interface {
 	SignupUser(input InputNewUser) (User, int, error)
 	LoginUser(input InputLoginUser) (User, int, error)
+	GetAllTransaction(params ParamsGetAllUsers, url string) (PaginationUser, int, error)
 }
 
 type service struct {
@@ -79,4 +80,62 @@ func (s *service) LoginUser(input InputLoginUser) (User, int, error) {
 	}
 
 	return userByUsername, http.StatusOK, nil
+}
+
+func (s *service) GetAllTransaction(params ParamsGetAllUsers, url string) (PaginationUser, int, error) {
+	var paginationUser PaginationUser
+	offset := params.Page * params.Limit
+
+	users, totalData, totalPage, err := s.userRepo.FindAll(params, offset)
+	if err != nil {
+		return paginationUser, http.StatusInternalServerError, err
+	}
+
+	paginationUser.FirstPage = fmt.Sprintf(
+		"%s?page=%v&order=%v&limit=%v",
+		url,
+		0,
+		params.Order,
+		params.Limit,
+	)
+
+	paginationUser.LastPage = fmt.Sprintf(
+		"%s?page=%v&order=%v&limit=%v",
+		url,
+		totalPage,
+		params.Order,
+		params.Limit,
+	)
+
+	if params.Page > 0 {
+		paginationUser.PreviousPage = fmt.Sprintf(
+			"%s?page=%v&order=%v&limit=%v",
+			url,
+			params.Page-1,
+			params.Order,
+			params.Limit,
+		)
+	}
+
+	if params.Page < totalPage {
+		paginationUser.NextPage = fmt.Sprintf(
+			"%s?page=%v&order=%v&limit=%v",
+			url,
+			params.Page+1,
+			params.Order,
+			params.Limit,
+		)
+	}
+
+	if params.Page > totalPage {
+		paginationUser.PreviousPage = ""
+	}
+
+	paginationUser.Page = params.Page
+	paginationUser.Limit = params.Limit
+	paginationUser.TotalData = totalData
+	paginationUser.TotalPage = totalPage
+	paginationUser.Users = users
+
+	return paginationUser, http.StatusOK, nil
 }

@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"fmt"
 	"imp/auth"
 	"imp/helper"
 	"imp/user"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -112,4 +114,64 @@ func (h *handlerUser) Login(c *gin.Context) {
 	)
 
 	c.JSON(code, response)
+}
+
+func (h *handlerUser) ListUser(c *gin.Context) {
+	page := c.DefaultQuery("page", "0")
+	order := c.DefaultQuery("order", "id desc")
+	limit := c.DefaultQuery("limit", "10")
+
+	limitNumber, err := strconv.Atoi(limit)
+	if err != nil {
+		response := helper.GenerateResponse(
+			"gagal",
+			http.StatusBadRequest,
+			err.Error(),
+		)
+
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	pageNumber, err := strconv.Atoi(page)
+	if err != nil {
+		response := helper.GenerateResponse(
+			"gagal",
+			http.StatusBadRequest,
+			err.Error(),
+		)
+
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	params := user.ParamsGetAllUsers{
+		Page:  pageNumber,
+		Order: order,
+		Limit: limitNumber,
+	}
+
+	path := c.Request.URL.Path
+	url := fmt.Sprintf("http://localhost:3000%v", path)
+
+	usersPagination, code, err := h.userService.GetAllTransaction(params, url)
+	if err != nil {
+		response := helper.GenerateResponse(
+			"gagal",
+			code,
+			err.Error(),
+		)
+
+		c.JSON(code, response)
+		return
+	}
+
+	response := helper.GenerateResponse(
+		"sukses",
+		code,
+		usersPagination,
+	)
+
+	c.JSON(code, response)
+
 }
