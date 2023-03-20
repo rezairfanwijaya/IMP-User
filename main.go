@@ -29,6 +29,7 @@ func main() {
 	// endpoint
 	router.POST("auth/signup", userHandler.SignUp)
 	router.POST("auth/login", userHandler.Login)
+	router.GET("user/userlist", userHandler.ListUser)
 
 	env, err := helper.GetENV(".env")
 	if err != nil {
