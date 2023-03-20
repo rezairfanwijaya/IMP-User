@@ -11,13 +11,13 @@ type IAuth interface {
 	GenerateToken(userID int) (string, error)
 }
 
-type auth struct{}
+type Service struct{}
 
-func NewAuth() *auth {
-	return &auth{}
+func NewAuth() *Service {
+	return &Service{}
 }
 
-func (a *auth) GenerateToken(userID int) (string, error) {
+func (a *Service) GenerateToken(userID int) (string, error) {
 	// payload
 	claim := jwt.MapClaims{}
 	claim["user_id"] = userID
@@ -42,7 +42,7 @@ func (a *auth) GenerateToken(userID int) (string, error) {
 	return tokenSigned, nil
 }
 
-func (a *auth) VerifyToken(token string) (*jwt.Token, error) {
+func (a *Service) VerifyToken(token string) (*jwt.Token, error) {
 	tokenParsed, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
 		_, ok := t.Method.(*jwt.SigningMethodHMAC)
 		if !ok {

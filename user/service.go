@@ -9,18 +9,19 @@ import (
 type IService interface {
 	SignupUser(input InputNewUser) (User, int, error)
 	LoginUser(input InputLoginUser) (User, int, error)
+	GetUserByID(ID int) (User, int, error)
 	GetAllTransaction(params ParamsGetAllUsers, url string) (PaginationUser, int, error)
 }
 
-type service struct {
+type Service struct {
 	userRepo IRepository
 }
 
-func NewService(userRepo IRepository) *service {
-	return &service{userRepo}
+func NewService(userRepo IRepository) *Service {
+	return &Service{userRepo}
 }
 
-func (s *service) SignupUser(input InputNewUser) (User, int, error) {
+func (s *Service) SignupUser(input InputNewUser) (User, int, error) {
 	// find user by username
 	userByUsername, err := s.userRepo.FindByUsername(input.Username)
 	if err != nil {
@@ -54,7 +55,7 @@ func (s *service) SignupUser(input InputNewUser) (User, int, error) {
 	return userSaved, http.StatusOK, nil
 }
 
-func (s *service) LoginUser(input InputLoginUser) (User, int, error) {
+func (s *Service) LoginUser(input InputLoginUser) (User, int, error) {
 	// find user by username
 	userByUsername, err := s.userRepo.FindByUsername(input.Username)
 	if err != nil {
@@ -82,7 +83,23 @@ func (s *service) LoginUser(input InputLoginUser) (User, int, error) {
 	return userByUsername, http.StatusOK, nil
 }
 
-func (s *service) GetAllTransaction(params ParamsGetAllUsers, url string) (PaginationUser, int, error) {
+func (s *Service) GetUserByID(ID int) (User, int, error) {
+	userByID, err := s.userRepo.FindByID(ID)
+	if err != nil {
+		return userByID, http.StatusInternalServerError, err
+	}
+
+	if userByID.ID == 0 {
+		return userByID, http.StatusBadRequest, fmt.Errorf(
+			"user dengan id %v tidak ditemukan",
+			ID,
+		)
+	}
+
+	return userByID, http.StatusOK, nil
+}
+
+func (s *Service) GetAllTransaction(params ParamsGetAllUsers, url string) (PaginationUser, int, error) {
 	var paginationUser PaginationUser
 	offset := params.Page * params.Limit
 
