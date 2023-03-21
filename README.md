@@ -1,4 +1,4 @@
-# POS system (income/expense transactions)
+# Simple User Auth
 
 This repository provides services about user authentication and authorization
 
